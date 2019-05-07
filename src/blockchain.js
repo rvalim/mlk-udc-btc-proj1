@@ -8,7 +8,8 @@
  *  
  */
 
-const SHA256 = require('../node_modules/crypto-js/sha256');
+
+const cypher = require('../utils/cypher')
 const BlockClass = require('./block.js');
 const bitcoinMessage = require('../node_modules/bitcoinjs-message');
 
@@ -34,8 +35,8 @@ class Blockchain {
      * Passing as a data `{data: 'Genesis Block'}`
      */
     async initializeChain() {
-        if( this.height === -1){
-            let block = new BlockClass.Block({data: 'Genesis Block'});
+        if (this.height === -1) {
+            let block = new BlockClass.Block({ data: 'Genesis Block' });
             await this._addBlock(block);
         }
     }
@@ -64,7 +65,15 @@ class Blockchain {
     _addBlock(block) {
         let self = this;
         return new Promise(async (resolve, reject) => {
-           
+            const pHash = this.height > -1 ? this.chain[this.height].hash : null
+
+            block.time = new Date().getTime().toString().slice(0, -3);
+            block.previousBlockHash = pHash
+            block.hash = cypher.toHash(block)
+            block.height = this.height++
+
+            this.chain.push(block)
+            resolve(block)
         });
     }
 
@@ -78,7 +87,9 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            
+            const message = `${address}:${parseInt(new Date().getTime().toString().slice(0, -3))}:starRegistry`
+
+            resolve(message)//bitcoinMessage.sign(message, address))
         });
     }
 
@@ -102,7 +113,18 @@ class Blockchain {
     submitStar(address, message, signature, star) {
         let self = this;
         return new Promise(async (resolve, reject) => {
+            const valid = await bitcoinMessage.verify(message, address, signature)
+
+            if (!valid) 
+                reject('Invalid signature')
             
+            const time = parseInt(message.split(':')[1])
+            const currentTime = parseInt(new Date().getTime().toString().slice(0, -3))
+            const milSeconds = (new Date(currentTime - time)).getMilliseconds()
+
+            // if (milSeconds > 5000) reject('Window expired')
+            
+            resolve(self._addBlock(new BlockClass.Block({ data: star })))
         });
     }
 
@@ -115,7 +137,12 @@ class Blockchain {
     getBlockByHash(hash) {
         let self = this;
         return new Promise((resolve, reject) => {
-           
+            let block = this.chain.filter(p => p.hash == hash)[0]
+            if (block) {
+                resolve(getBlockByHeight(block.height));
+            } else {
+                resolve(null);
+            }
         });
     }
 
@@ -127,8 +154,9 @@ class Blockchain {
     getBlockByHeight(height) {
         let self = this;
         return new Promise((resolve, reject) => {
-            let block = self.chain.filter(p => p.height === height)[0];
-            if(block){
+            let block = self.chain[height]//self.chain.filter(p => p.height === height)[0];
+            block.body = JSON.parse(cypher.toHexDecode(block.body))
+            if (block) {
                 resolve(block);
             } else {
                 resolve(null);
@@ -142,11 +170,11 @@ class Blockchain {
      * Remember the star should be returned decoded.
      * @param {*} address 
      */
-    getStarsByWalletAddress (address) {
+    getStarsByWalletAddress(address) {
         let self = this;
         let stars = [];
         return new Promise((resolve, reject) => {
-            
+
         });
     }
 
@@ -160,7 +188,7 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
-            
+
         });
     }
 

@@ -9,8 +9,7 @@
  *  run asynchronous.
  */
 
-const SHA256 = require('../node_modules/crypto-js/sha256');
-const hex2ascii = require('../node_modules/hex2ascii/hex2ascii');
+const cypher = require('../utils/cypher')
 
 class Block {
 
@@ -18,7 +17,7 @@ class Block {
 	constructor(data){
 		this.hash = null;                                           // Hash of the block
 		this.height = 0;                                            // Block Height (consecutive number of each block)
-		this.body = Buffer(JSON.stringify(data)).toString('hex');   // Will contain the transactions stored in the block, by default it will encode the data
+		this.body = cypher.toHexEncode(JSON.stringify(data));       // Will contain the transactions stored in the block, by default it will encode the data
 		this.time = 0;                                              // Timestamp for the Block creation
 		this.previousBlockHash = null;                              // Reference to the previous Block Hash
     }
@@ -38,6 +37,10 @@ class Block {
     validate() {
         let self = this;
         return new Promise((resolve, reject) => {
+            const hash = this.hash
+            const nHash = cypher.toHash(this)
+
+            resolve(hash === nHash)
             // Save in auxiliary variable the current block hash
                                             
             // Recalculate the hash of the Block
@@ -59,6 +62,7 @@ class Block {
      *     or Reject with an error.
      */
     getBData() {
+        return JSON.parse(cypher.toHexDecode(this.body))
         // Getting the encoded data saved in the Block
         // Decoding the data to retrieve the JSON representation of the object
         // Parse the data to an object to be retrieve.
