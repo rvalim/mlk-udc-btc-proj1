@@ -22,6 +22,14 @@ class Block {
 		this.previousBlockHash = null;                              // Reference to the previous Block Hash
     }
     
+    // constructor({hash, height, body, time, previousBlockHash}){
+	// 	this.hash = hash;                                           // Hash of the block
+	// 	this.height = height;                                       // Block Height (consecutive number of each block)
+	// 	this.body = body;                                           // Will contain the transactions stored in the block, by default it will encode the data
+	// 	this.time = time;                                           // Timestamp for the Block creation
+	// 	this.previousBlockHash = previousBlockHash;                 // Reference to the previous Block Hash
+    // }
+
     /**
      *  validate() method will validate if the block has been tampered or not.
      *  Been tampered means that someone from outside the application tried to change

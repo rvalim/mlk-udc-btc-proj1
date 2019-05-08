@@ -25,6 +25,7 @@ class Blockchain {
      */
     constructor() {
         this.chain = [];
+        this.wallet = {}
         this.height = -1;
         this.initializeChain();
     }
@@ -70,7 +71,7 @@ class Blockchain {
             block.time = new Date().getTime().toString().slice(0, -3);
             block.previousBlockHash = pHash
             block.hash = cypher.toHash(block)
-            block.height = this.height++
+            block.height = ++this.height
 
             this.chain.push(block)
             resolve(block)
@@ -123,8 +124,14 @@ class Blockchain {
             const milSeconds = (new Date(currentTime - time)).getMilliseconds()
 
             // if (milSeconds > 5000) reject('Window expired')
-            
-            resolve(self._addBlock(new BlockClass.Block({ data: star })))
+            const block = await self._addBlock(new BlockClass.Block({ data: star }))
+
+            this.wallet = {
+                ...this.wallet,
+                [address]: [...(this.wallet[address] || []), block.height]
+            }
+
+            resolve(this.getBlockByHeight(this.height))
         });
     }
 
@@ -139,7 +146,7 @@ class Blockchain {
         return new Promise((resolve, reject) => {
             let block = this.chain.filter(p => p.hash == hash)[0]
             if (block) {
-                resolve(getBlockByHeight(block.height));
+                resolve(this.getBlockByHeight(block.height));
             } else {
                 resolve(null);
             }
@@ -154,10 +161,14 @@ class Blockchain {
     getBlockByHeight(height) {
         let self = this;
         return new Promise((resolve, reject) => {
-            let block = self.chain[height]//self.chain.filter(p => p.height === height)[0];
-            block.body = JSON.parse(cypher.toHexDecode(block.body))
+            const block = self.chain[height]//self.chain.filter(p => p.height === height)[0];
             if (block) {
-                resolve(block);
+                resolve(
+                    {
+                        ...block,
+                        "body": block.getBData()
+                    }
+                );
             } else {
                 resolve(null);
             }
@@ -174,7 +185,8 @@ class Blockchain {
         let self = this;
         let stars = [];
         return new Promise((resolve, reject) => {
-
+            let promises = (this.wallet[address] || []).map(p => this.getBlockByHeight(p))
+            resolve(Promise.all(promises))
         });
     }
 
@@ -188,7 +200,21 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
+            pHash = null
+            //new BlockClass.Block({ data: 'Genesis Block' })
 
+            for (let i = 0; i < this.height; i++) {
+
+                if(pHash != this.chain[i].previousBlockHash) 
+                    errorLog.push(`block ${this.chain[i].hash} invalid previous hash`)
+                
+                if (!this.chain[i].validateChain.validate())
+                    errorLog.push(`block ${this.chain[i].hash} seems to have been violeted`)
+                                
+                pHash = this.chain[i].previousBlockHash                
+            }
+
+            return errorLog
         });
     }
 
