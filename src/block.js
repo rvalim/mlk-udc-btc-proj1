@@ -45,18 +45,14 @@ class Block {
     validate() {
         let self = this;
         return new Promise((resolve, reject) => {
-            const hash = this.hash
-            const nHash = cypher.toHash(this)
+            const clone = Object.assign({}, this);
+            clone.hash = null
 
-            resolve(hash === nHash)
-            // Save in auxiliary variable the current block hash
-                                            
-            // Recalculate the hash of the Block
-            // Comparing if the hashes changed
-            // Returning the Block is not valid
-            
-            // Returning the Block is valid
+            const nHash = cypher.toHash(clone)
 
+            console.log('validate',{ nHash, tClone: JSON.stringify(clone),clone, original: this})
+
+            resolve(this.hash === nHash)
         });
     }
 
@@ -71,12 +67,6 @@ class Block {
      */
     getBData() {
         return JSON.parse(cypher.toHexDecode(this.body))
-        // Getting the encoded data saved in the Block
-        // Decoding the data to retrieve the JSON representation of the object
-        // Parse the data to an object to be retrieve.
-
-        // Resolve with the data if the object isn't the Genesis block
-
     }
 
 }

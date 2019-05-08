@@ -64,14 +64,13 @@ class Blockchain {
      * that this method is a private method. 
      */
     _addBlock(block) {
-        let self = this;
         return new Promise(async (resolve, reject) => {
             const pHash = this.height > -1 ? this.chain[this.height].hash : null
 
             block.time = new Date().getTime().toString().slice(0, -3);
             block.previousBlockHash = pHash
-            block.hash = cypher.toHash(block)
             block.height = ++this.height
+            block.hash = cypher.toHash(block)
 
             this.chain.push(block)
             resolve(block)
@@ -90,7 +89,7 @@ class Blockchain {
         return new Promise((resolve) => {
             const message = `${address}:${parseInt(new Date().getTime().toString().slice(0, -3))}:starRegistry`
 
-            resolve(message)//bitcoinMessage.sign(message, address))
+            resolve(message)
         });
     }
 
@@ -112,7 +111,6 @@ class Blockchain {
      * @param {*} star 
      */
     submitStar(address, message, signature, star) {
-        let self = this;
         return new Promise(async (resolve, reject) => {
             const valid = await bitcoinMessage.verify(message, address, signature)
 
@@ -121,10 +119,11 @@ class Blockchain {
             
             const time = parseInt(message.split(':')[1])
             const currentTime = parseInt(new Date().getTime().toString().slice(0, -3))
-            const milSeconds = (new Date(currentTime - time)).getMilliseconds()
-
-            // if (milSeconds > 5000) reject('Window expired')
-            const block = await self._addBlock(new BlockClass.Block({ data: star }))
+            const milSeconds = currentTime - time
+            
+            //if (milSeconds > (5 * 60)) reject('Window expired')
+            
+            const block = await this._addBlock(new BlockClass.Block({ data: star }))
 
             this.wallet = {
                 ...this.wallet,
@@ -142,7 +141,6 @@ class Blockchain {
      * @param {*} hash 
      */
     getBlockByHash(hash) {
-        let self = this;
         return new Promise((resolve, reject) => {
             let block = this.chain.filter(p => p.hash == hash)[0]
             if (block) {
@@ -159,9 +157,8 @@ class Blockchain {
      * @param {*} height 
      */
     getBlockByHeight(height) {
-        let self = this;
         return new Promise((resolve, reject) => {
-            const block = self.chain[height]//self.chain.filter(p => p.height === height)[0];
+            const block = this.chain[height]
             if (block) {
                 resolve(
                     {
@@ -182,8 +179,6 @@ class Blockchain {
      * @param {*} address 
      */
     getStarsByWalletAddress(address) {
-        let self = this;
-        let stars = [];
         return new Promise((resolve, reject) => {
             let promises = (this.wallet[address] || []).map(p => this.getBlockByHeight(p))
             resolve(Promise.all(promises))
@@ -197,24 +192,21 @@ class Blockchain {
      * 2. Each Block should check the with the previousBlockHash
      */
     validateChain() {
-        let self = this;
-        let errorLog = [];
         return new Promise(async (resolve, reject) => {
-            pHash = null
-            //new BlockClass.Block({ data: 'Genesis Block' })
+            let pHash = null
+            let errorLog = []
 
-            for (let i = 0; i < this.height; i++) {
-
+            for (let i = 0; i <= this.height; i++) {
                 if(pHash != this.chain[i].previousBlockHash) 
                     errorLog.push(`block ${this.chain[i].hash} invalid previous hash`)
-                
-                if (!this.chain[i].validateChain.validate())
+
+                if (!(await this.chain[i].validate()))
                     errorLog.push(`block ${this.chain[i].hash} seems to have been violeted`)
-                                
-                pHash = this.chain[i].previousBlockHash                
+                
+                pHash = this.chain[i].hash
             }
 
-            return errorLog
+            resolve(errorLog)
         });
     }
 
