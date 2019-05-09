@@ -37,7 +37,7 @@ class Blockchain {
      */
     async initializeChain() {
         if (this.height === -1) {
-            let block = new BlockClass.Block({ data: 'Genesis Block' });
+            let block = new BlockClass.Block('Genesis Block');
             await this._addBlock(block);
         }
     }
@@ -121,16 +121,16 @@ class Blockchain {
             const currentTime = parseInt(new Date().getTime().toString().slice(0, -3))
             const milSeconds = currentTime - time
             
-            //if (milSeconds > (5 * 60)) reject('Window expired')
+            if (milSeconds > (5 * 60)) reject('Window expired')
             
-            const block = await this._addBlock(new BlockClass.Block({ data: star }))
+            const block = await this._addBlock(new BlockClass.Block(star))
 
             this.wallet = {
                 ...this.wallet,
                 [address]: [...(this.wallet[address] || []), block.height]
             }
 
-            resolve(this.getBlockByHeight(this.height))
+            resolve(block)
         });
     }
 
